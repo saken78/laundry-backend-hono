@@ -6,44 +6,32 @@ import { HTTPException } from "hono/http-exception";
 import { AuthMiddleware } from "../middleware/auth.middleware";
 import type { UpdateCustomerRequest } from "./customers.model";
 import { OwnerMiddleware } from "../middleware/owner.middleware";
-import { parsePagination } from "../lib/types";
+import {
+  getPagination,
+  jsonCreated,
+  jsonOK,
+  jsonOk,
+  jsonPaginated,
+} from "../lib/response";
 
 const CustomersController = new Hono();
 CustomersController.use(AuthMiddleware);
 CustomersController.post("/", async (c: Context) => {
   const body = await c.req.json();
   const data = await CustomerService.registerCustomer(body);
-  return c.json(
-    {
-      data: data,
-    },
-    HttpStatus.CREATED,
-  );
+  return jsonCreated(c, data);
 });
 
 CustomersController.get("/", async (c: Context) => {
-  let take: number = Number(c.req.query("take"));
-  let page: number = Number(c.req.query("page"));
-
-  const pg = parsePagination(page, take);
+  const pg = getPagination(c);
 
   const data = await CustomerService.getAllCustomerPagination(pg.take, pg.page);
-  return c.json(
-    {
-      ...data,
-    },
-    HttpStatus.OK,
-  );
+  return jsonPaginated(c, data);
 });
 
 CustomersController.get("/all", async (c: Context) => {
   const data = await CustomerService.getAllCustomer();
-  return c.json(
-    {
-      data: data,
-    },
-    HttpStatus.OK,
-  );
+  return jsonOk(c, data);
 });
 
 CustomersController.get("/:id", async (c: Context) => {
@@ -54,12 +42,7 @@ CustomersController.get("/:id", async (c: Context) => {
     });
   }
   const data = await CustomerService.getCustomerById(id);
-  return c.json(
-    {
-      data: data,
-    },
-    HttpStatus.OK,
-  );
+  return jsonOK(c, data);
 });
 
 CustomersController.put("/:id", async (c: Context) => {
@@ -79,12 +62,7 @@ CustomersController.put("/:id", async (c: Context) => {
   }
 
   const data = await CustomerService.updateCustomerById(id, body);
-  return c.json(
-    {
-      data: data,
-    },
-    HttpStatus.OK,
-  );
+  return jsonOK(c, data);
 });
 CustomersController.use(OwnerMiddleware);
 CustomersController.delete("/:id", async (c: Context) => {
@@ -96,12 +74,7 @@ CustomersController.delete("/:id", async (c: Context) => {
   }
   const data = await CustomerService.deleteCustomerById(id);
 
-  return c.json(
-    {
-      data: data,
-    },
-    HttpStatus.OK,
-  );
+  return jsonOK(c, data);
 });
 
 export default CustomersController;
