@@ -38,6 +38,7 @@ export async function renewTokens(
     exp: Math.floor(Date.now() / 1000) + 7 * 24 * 60 * 60,
     iat: Math.floor(Date.now() / 1000),
   };
+
   const refresh_token = await sign(rt_payload, SECRET, "HS256");
   const token_hash = await Bun.password.hash(refresh_token, {
     algorithm: "argon2id",
@@ -46,7 +47,7 @@ export async function renewTokens(
   });
 
   const expires_at = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-
+  await prisma.$executeRaw`UPDATE users set rt_hash = ${token_hash}, expires_at = ${expires_at} where id = ${user.id}`;
   await setSignedCookie(c, "refresh_token", refresh_token, SECRET, {
     httpOnly: true,
     secure: Bun.env.NODE_ENV === "production",
@@ -54,6 +55,4 @@ export async function renewTokens(
     path: "/",
     maxAge: 60 * 60 * 24 * 7,
   });
-
-  await prisma.$executeRaw`UPDATE users set rt_hash = ${token_hash}, expires_at = ${expires_at} where id = ${user.id}`;
 }
